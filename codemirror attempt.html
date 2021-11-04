@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <title>Codemirror page test</title>
+    <link rel='stylesheet' href= 'codemirror/lib/codemirror.css'>
+
+    <link rel='stylesheet' href= 'codemirror/theme/blackboard.css'>
+
+    <script src = 'codemirror/lib/codemirror.js'></script>
+
+    <script src = 'codemirror/addon/edit/closebrackets.js'></script>
+
+    <script src = 'codemirror/addon/edit/matchbrackets.js'></script>
+
+   
+
+    <script src = 'codemirror/mode/python/python.js'></script>
+
+</head>
+<body>
+<textarea class = 'codemirroreditor' id = 'editor'>
+</textarea>
+<div id = 'output'></div>
+
+<button>edit</button>
+<button id='run'>Run</button>
+<!-- Create a simple CodeMirror instance -->
+<script>
+  var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {  
+    lineNumbers: true, 
+    theme: "blackboard",
+    mode: "python",
+    autoCloseBrackets: true,
+  });
+
+
+    document.getElementById('run').addEventListener('click', function(){
+        var value = editor.getValue();
+        axios.post("http://localhost/api/runcode", {
+            code: value
+        }).then(function(res) {
+            console.log(res);
+        });
+    };)
+
+
+
+
+const express = require("express");
+const { exec } = require("child_process");
+const router = express.Router();
+router.post("/api/runcode", (req, res) => {
+    let code = req.body.code;
+    fs.writeFile("code/code.py", code+"\nprint(solution())", (err) => {
+        let command = "python code/code.py";
+        exec(command, (err, stdout, stdin) => {
+            if(err){
+                let reg  = /[\d\D]*(line\s\d)[\d\D]*?(\w*(?:Error|Exception).*)/im;
+                let matchArr = reg.exec(err.message);
+                matchArr.shift();
+                res.send(matchArr.join(", "));
+            }
+            else
+                res.send(stdout);
+        });
+    });
+});
+</script>
+</body>
+
+</html>
